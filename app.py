@@ -18,7 +18,6 @@ import geopandas as gpd
 #from geopy.geocoders import Nominatim
 import numpy as np
 import io
-import asyncio
 from datetime import date
 import plotly.express as px
 
@@ -108,7 +107,7 @@ def build_district_layers(upper=0):
                 'fillOpacity': 0.3
             },
             hover_style={
-                'color': 'orange', 
+                'color': 'orange',
                 'weight': 3
             }
         )
@@ -214,7 +213,7 @@ def build_infographics1():
     total_sites_by_name = total_sites_by_name.iloc[:totnum, :]
     sns.set_color_codes("pastel")
 
-    cmap = plt.get_cmap('plasma')
+    cmap = plt.get_cmap('viridis')
     norm = mcolors.Normalize(vmin=total_sites_by_name["Total_#_Sites"].min(),
                              vmax=total_sites_by_name["Total_#_Sites"].max())
     colors = [cmap(norm(value)) for value in total_sites_by_name["Total_#_Sites"]]
@@ -345,13 +344,14 @@ app_ui = ui.page_fluid(
         ui.column(6,ui.output_table("site_list")),
         ui.column(3, ui.HTML("""
                 <h1 style="text-align: left; margin-bottom: 1px;
-                font-size: 18px; "<br><br><b>Location Totals</b></h2>
+                font-size: 18px; "<br><br><b>Summary of Location Totals</b></h2>
             """),
             ui.output_table("site_list_summary"),
-            ui.download_button("download_data", "Download Table as .csv")
+            ui.download_button("download_data", "Download Table")
         )
     ),
     #ui.tags.div(ui.output_html("district_map"))
+
     ui.HTML("""
         <hr>
         <h1 style="text-align: left; margin-bottom: 10px;"><b>Credits</b></h1>
@@ -359,10 +359,32 @@ app_ui = ui.page_fluid(
         font-size: 18px; ">Project lead: <a href="mailto:hessakh@umich.edu" target="_blank">Hessa Al-Thani</a><br>
         MHAction contact: <a href="mailto:pterranova@mhaction.org" target="_blank">Paul Terranova</a> with support from <a href="mailto:dcampbell@ionia-mi.net" target="_blank">Deb Campbell</a> <br>
         Website development: Naichen Shi <br>
+        Web design: Vicky Wang <br>
         Data scraping and collection: Bingqing Xiang<br>
         In partnership with the <a href="https://ginsberg.umich.edu/ctac"
         target="_blank">Community Technical Assistance Collaborative</a> at the University of Michigan.</h2>
+    """),
+
+    ui.HTML("""
+        <hr>
+        <h1 style="text-align: left; margin-bottom: 10px;"><b>Reference Files</b></h1>
+    """),
+    ui.download_link("download_mhvillage", "Raw data: MHVillage with coordinates and legislative district .csv"),
+    ui.HTML("""
         <br>
+    """),
+    ui.download_link("download_lara", "Raw data: LARA with coordinates and legislative distric .csv"),
+    ui.HTML("""
+        <br>
+    """),
+    ui.download_link("download_house_districts", "Michigan State House Districts 2021 .GeoJSON"),
+    ui.HTML("""
+        <br>
+    """),
+    ui.download_link("download_senate_districts", "Michigan State Senate Districts 2021 .GeoJSON"),
+
+    ui.HTML("""
+        <hr>
         <h2 style="text-align: left; margin-bottom: 10px; font-size: 16px;">This is an updated version from June 2024. The original app can be found <a href="https://hessakh.shinyapps.io/michigan_housing1/" target="_blank">here.</a> Updated source code can be found on <a href="https://github.com/viwaumich/mhc" target="_blank">Git.</a> Please reach out to Vicky Wang (<a href="mailto:viwa@umich.edu" target="_blank">viwa@umich.edu</a>) with questions.</h2>
     """),
      #       <h2 style="text-align: left; margin-bottom: 10px;font-size: 18px;
@@ -600,7 +622,48 @@ def server(input, output, session):
 
         return output.getvalue(), ""
 
+    @output
+    @render.download(filename=lambda: f"lara_with_coord_and_legislativedistrict.csv")
+    def download_mhvillage():
+        output = io.StringIO()
+        mhvillage_df.to_csv(output, index=False)
+        output.seek(0)
+        return output.getvalue(), ""
 
+    @output
+    @render.download(filename=lambda: f"MHVillageDec7_Legislative1.csv")
+    def download_mhvillage():
+        output = io.StringIO()
+        mhvillage_df.to_csv(output, index=False)
+        output.seek(0)
+        return output.getvalue(), ""
+
+    @output
+    @render.download(filename=lambda: f"LARA_with_coord_and_legislativedistrict1.csv")
+    def download_lara():
+        output = io.StringIO()
+        lara_df.to_csv(output, index=False)
+        output.seek(0)
+        return output.getvalue(), ""
+
+    @output
+    @render.download(filename=lambda: f"Michigan_State_House_Districts_2021.json")
+    def download_house_districts():
+        output = io.StringIO()
+        with open(here.parent / house_districts_geojson_path, 'r') as f:
+            output.write(f.read())
+        output.seek(0)
+        return output.getvalue(), ""
+
+    @output
+    @render.download(filename=lambda:
+    f"Michigan_State_Senate_Districts_2021.json")
+    def download_senate_districts():
+        output = io.StringIO()
+        with open(here.parent / senate_districts_geojson_path, 'r') as f:
+            output.write(f.read())
+        output.seek(0)
+        return output.getvalue(), ""
 
     @render.code
     def info():
